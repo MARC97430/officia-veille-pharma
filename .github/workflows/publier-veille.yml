@@ -1,29 +1,29 @@
 name: Publier Veille Pharmaceutique
 
 on:
-  workflow_dispatch: 
+  workflow_dispatch:
   schedule:
-    # Chaque lundi à 9h (UTC+2 = 7h UTC en été)
-    - cron: '0 7 * * 1'
+    # Chaque lundi a 9h heure La Reunion (UTC+4 = 5h UTC)
+    - cron: '0 5 * * 1'
 
 jobs:
   publish:
     runs-on: ubuntu-latest
-    
+
     steps:
-      - uses: actions/checkout@v3
-      
+      - uses: actions/checkout@v4
+
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      
+
       - name: Install dependencies
-        run: pip install requests
-      
+        run: pip install requests anthropic
+
       - name: Run publish script
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
-          VEILLE_FOLDER: ${{ github.workspace }}/veilles
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: python publier_veille_github.py
