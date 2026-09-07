@@ -1,6 +1,7 @@
 name: Publier Veille Pharmaceutique
 
 on:
+  workflow_dispatch: 
   schedule:
     # Chaque lundi à 9h (UTC+2 = 7h UTC en été)
     - cron: '0 7 * * 1'
