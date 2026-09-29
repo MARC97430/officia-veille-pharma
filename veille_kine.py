@@ -16,7 +16,7 @@ from datetime import datetime, timedelta
 
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
 BREVO_API_KEY = os.getenv("BREVO_API_KEY")
-SENDER_EMAIL = "contact@officia.re"
+SENDER_EMAIL = "contact@officiaia.re"
 SENDER_NAME = "Officia Veille Kine"
 
 # Liste des destinataires (adresses email)
@@ -120,7 +120,7 @@ def send_email(titre, contenu_html, destinataires):
     </div>
     <div style="text-align: center; padding: 15px; color: #9ca3af; font-size: 12px;">
         <p>Officia - Services IA pour les professionnels de sante</p>
-        <p>La Reunion | contact@officia.re</p>
+        <p>La Reunion | contact@officiaia.re</p>
     </div>
 </body>
 </html>"""
