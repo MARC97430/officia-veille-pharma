@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 Script GitHub Actions - Veille hebdomadaire Kinesitherapie
-Officia.IA - La Reunion
+Officia - La Reunion
 
 Genere une veille professionnelle pour masseurs-kinesitherapeutes
 et l'envoie par email via Brevo.
@@ -77,7 +77,7 @@ REGLES IMPORTANTES :
 - Vocabulaire professionnel adapte aux MK
 - HTML propre avec h2/h3, ul/li, paragraphes
 - Si peu d actualites sur un theme, le mentionner brievement plutot que d inventer
-- Ajouter une note en bas : Cette veille est generee automatiquement par Officia.IA
+- Ajouter une note en bas : Cette veille est generee automatiquement par Officia
 """
 
     response = client.messages.create(
@@ -113,13 +113,13 @@ def send_email(titre, contenu_html, destinataires):
 <body style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto; padding: 20px; color: #333;">
     <div style="background: #2563eb; color: white; padding: 20px; border-radius: 8px 8px 0 0; text-align: center;">
         <h1 style="margin: 0; font-size: 22px;">{titre}</h1>
-        <p style="margin: 5px 0 0; opacity: 0.9;">Officia.IA - Votre veille professionnelle</p>
+        <p style="margin: 5px 0 0; opacity: 0.9;">Officia - Votre veille professionnelle</p>
     </div>
     <div style="border: 1px solid #e5e7eb; border-top: none; padding: 20px; border-radius: 0 0 8px 8px;">
         {contenu_html}
     </div>
     <div style="text-align: center; padding: 15px; color: #9ca3af; font-size: 12px;">
-        <p>Officia.IA - Services IA pour les professionnels de sante</p>
+        <p>Officia - Services IA pour les professionnels de sante</p>
         <p>La Reunion | contact@officia.re</p>
     </div>
 </body>
@@ -169,7 +169,7 @@ def send_alert_email(subject, body):
 
 def main():
     print("=" * 60)
-    print("Veille Kinesitherapie - Officia.IA")
+    print("Veille Kinesitherapie - Officia")
     print(f"Date : {datetime.now().strftime('%d/%m/%Y %H:%M')}")
     print("=" * 60)
 
