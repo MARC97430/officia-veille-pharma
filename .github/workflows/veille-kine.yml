@@ -1,0 +1,29 @@
+name: Veille Kinesitherapie
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Chaque mardi a 12h heure La Reunion (UTC+4 = 8h UTC)
+    - cron: '0 8 * * 2'
+
+jobs:
+  send-veille-kine:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests anthropic
+
+      - name: Run veille kine script
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
+          KINE_EMAILS: ${{ secrets.KINE_EMAILS }}
+        run: python veille_kine.py
