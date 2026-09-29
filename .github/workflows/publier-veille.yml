@@ -10,6 +10,8 @@ jobs:
   publish:
     runs-on: ubuntu-latest
 
+
+
     steps:
       - uses: actions/checkout@v4
 
@@ -26,4 +28,5 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
         run: python publier_veille_github.py
