@@ -3,15 +3,74 @@
 """
 Script GitHub Actions - Veille pharmaceutique automatique avec Claude AI
 Officia - Pharmacies de La Reunion
+
+Modifications 29/09/2026 :
+- Verification que Supabase repond AVANT de generer la veille (economie de credits API)
+- Alerte email via Brevo si la publication echoue
+- Exit code 1 en cas d'echec (GitHub Actions detecte l'erreur)
 """
 
 import os
+import sys
 import requests
 from datetime import datetime, timedelta
 
-SUPABASE_URL = os.getenv("SUPABASE_URL", "https://xrmavatowkkpzggrlghr.supabase.co")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY", "sb_publishable_E7Td7w0mhAquUmnEoKUpiA_zHhcasKz")
+SUPABASE_URL = os.getenv("SUPABASE_URL", "https://dkvumdemuueoqlolohhw.supabase.co")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
+BREVO_API_KEY = os.getenv("BREVO_API_KEY", "")
+ALERT_EMAIL = "contact@officia.re"
+
+
+def check_supabase_health():
+    """Verifie que Supabase repond avant de generer la veille."""
+    headers = {
+        "apikey": SUPABASE_KEY,
+        "Authorization": f"Bearer {SUPABASE_KEY}"
+    }
+    url = f"{SUPABASE_URL}/rest/v1/Veilles?select=Titre&limit=1"
+    try:
+        response = requests.get(url, headers=headers, timeout=10)
+        if response.status_code == 200:
+            print("Supabase OK - base de donnees accessible")
+            return True
+        else:
+            print(f"Supabase ERREUR ({response.status_code}): {response.text}")
+            return False
+    except Exception as e:
+        print(f"Supabase INJOIGNABLE: {e}")
+        return False
+
+
+def send_alert_email(subject, body):
+    """Envoie une alerte par email via Brevo (ex-Sendinblue)."""
+    if not BREVO_API_KEY:
+        print("Pas de BREVO_API_KEY configuree - alerte email impossible")
+        print(f"ALERTE: {subject}")
+        return False
+    
+    url = "https://api.brevo.com/v3/smtp/email"
+    headers = {
+        "api-key": BREVO_API_KEY,
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "sender": {"name": "Officia Veille", "email": ALERT_EMAIL},
+        "to": [{"email": ALERT_EMAIL}],
+        "subject": subject,
+        "htmlContent": f"<p>{body}</p><p><small>Message automatique - GitHub Actions</small></p>"
+    }
+    try:
+        response = requests.post(url, json=payload, headers=headers, timeout=10)
+        if response.status_code in [200, 201]:
+            print(f"Alerte email envoyee a {ALERT_EMAIL}")
+            return True
+        else:
+            print(f"Erreur envoi email ({response.status_code}): {response.text}")
+            return False
+    except Exception as e:
+        print(f"Erreur envoi email: {e}")
+        return False
 
 
 def get_week_dates():
@@ -69,19 +128,23 @@ REGLES : DCI uniquement (pas de noms de marque), ne rien inventer, vocabulaire e
     if not contenu_html.strip():
         contenu_html = "<p>Veille en cours de generation.</p>"
     post_facebook = f"Veille pharmaceutique - {titre}\n\nVotre veille est disponible sur le site Officia.\n\n#PharmacieReunion #Officia"
-    return {"titre": titre, "date_semaine": date_semaine, "contenu_html": contenu_html, "post_facebook": post_facebook}
+    return {"Titre": titre, "date_semaine": date_semaine, "contenu_html": contenu_html, "post_facebook": post_facebook}
 
 
 def publish_to_supabase(data):
-    headers = {"apikey": SUPABASE_KEY, "Content-Type": "application/json", "Authorization": f"Bearer {SUPABASE_KEY}"}
-    url = f"{SUPABASE_URL}/rest/v1/veilles"
+    headers = {
+        "apikey": SUPABASE_KEY,
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {SUPABASE_KEY}"
+    }
+    url = f"{SUPABASE_URL}/rest/v1/Veilles"
     try:
         response = requests.post(url, json=data, headers=headers, timeout=15)
         if response.status_code in [200, 201]:
             print("Veille publiee avec succes !")
             return True
         else:
-            print(f"Erreur ({response.status_code}): {response.text}")
+            print(f"Erreur publication ({response.status_code}): {response.text}")
             return False
     except Exception as e:
         print(f"Erreur reseau : {e}")
@@ -91,15 +154,54 @@ def publish_to_supabase(data):
 def main():
     print("=" * 60)
     print("Veille Pharmaceutique Automatique - Officia")
+    print(f"Date : {datetime.now().strftime('%d/%m/%Y %H:%M')}")
     print("=" * 60)
+
+    # Verification des cles
     if not ANTHROPIC_API_KEY:
-        print("ANTHROPIC_API_KEY manquante dans les secrets GitHub !")
-        return
+        print("ERREUR: ANTHROPIC_API_KEY manquante dans les secrets GitHub !")
+        sys.exit(1)
+
+    if not SUPABASE_KEY:
+        print("ERREUR: SUPABASE_KEY manquante dans les secrets GitHub !")
+        sys.exit(1)
+
+    # Etape 1 : Verifier que Supabase repond
+    print("\n[1/3] Verification Supabase...")
+    if not check_supabase_health():
+        msg = ("La veille n'a PAS ete publiee : Supabase ne repond pas. "
+               "Le projet est peut-etre en pause (plan gratuit). "
+               "Va sur https://supabase.com/dashboard pour le reactiver.")
+        print(f"ECHEC: {msg}")
+        send_alert_email(
+            "ALERTE Officia - Veille non publiee (Supabase en panne)",
+            msg
+        )
+        sys.exit(1)
+
+    # Etape 2 : Generer la veille avec Claude
+    print("\n[2/3] Generation du contenu avec Claude...")
     data = generate_veille_with_claude()
-    print(f"Contenu genere : {data['titre']}")
+    print(f"Contenu genere : {data['Titre']}")
+
+    # Etape 3 : Publier dans Supabase
+    print("\n[3/3] Publication dans Supabase...")
     success = publish_to_supabase(data)
-    print("Succes !" if success else "Echec - verifier les logs")
-    print("=" * 60)
+
+    if success:
+        print("\n" + "=" * 60)
+        print("SUCCES - Veille publiee sur le site !")
+        print("=" * 60)
+    else:
+        msg = ("La veille a ete generee mais la publication dans Supabase a echoue. "
+               "Verifier les logs GitHub Actions pour plus de details.")
+        print(f"\nECHEC: {msg}")
+        send_alert_email(
+            "ALERTE Officia - Veille generee mais non publiee",
+            msg
+        )
+        sys.exit(1)
+
 
 if __name__ == "__main__":
     main()
