@@ -3,8 +3,8 @@ name: Veille Kinesitherapie
 on:
   workflow_dispatch:
   schedule:
-    # Chaque mardi a 12h heure La Reunion (UTC+4 = 8h UTC)
-    - cron: '0 8 * * 2'
+    # Chaque lundi a 12h heure La Reunion (UTC+4 = 8h UTC)
+    - cron: '0 8 * * 1'
 
 jobs:
   send-veille-kine:
