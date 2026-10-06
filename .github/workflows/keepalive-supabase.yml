@@ -1,0 +1,26 @@
+name: Garder Supabase actif
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Tous les jours a 6h heure La Reunion (2h UTC)
+    - cron: '0 2 * * *'
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Interroger la base Supabase
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: |
+          code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 \
+            -H "apikey: $SUPABASE_KEY" \
+            -H "Authorization: Bearer $SUPABASE_KEY" \
+            "$SUPABASE_URL/rest/v1/Veilles?select=Titre&limit=1")
+          echo "Reponse Supabase : $code"
+          if [ "$code" != "200" ]; then
+            echo "ERREUR : Supabase ne repond pas correctement"
+            exit 1
+          fi
