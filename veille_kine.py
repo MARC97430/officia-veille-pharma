@@ -34,8 +34,10 @@ MAX_TOKENS = 8000
 
 
 def get_week_dates():
+    # La veille part le lundi : elle couvre la SEMAINE ECOULEE
+    # (lundi precedent -> dimanche precedent), pas la semaine qui commence.
     today = datetime.now()
-    monday = today - timedelta(days=today.weekday())
+    monday = today - timedelta(days=today.weekday() + 7)
     sunday = monday + timedelta(days=6)
     MOIS_FR = {
         1: "janvier", 2: "fevrier", 3: "mars", 4: "avril",
@@ -49,6 +51,10 @@ def get_week_dates():
     annee = monday.strftime("%Y")
     if monday.month == sunday.month:
         date_semaine = f"{jour_debut} au {jour_fin} {mois_debut} {annee}"
+    elif monday.year != sunday.year:
+        # Semaine a cheval sur deux annees (fin decembre / debut janvier)
+        date_semaine = (f"{jour_debut} {mois_debut} {annee} au "
+                        f"{jour_fin} {mois_fin} {sunday.strftime('%Y')}")
     else:
         date_semaine = f"{jour_debut} {mois_debut} au {jour_fin} {mois_fin} {annee}"
     titre = f"Veille Kinesitherapie - Semaine du {date_semaine}"
@@ -153,7 +159,9 @@ def generate_veille_with_claude(titre, date_semaine):
 avec une attention particuliere aux specificites de La Reunion.
 
 Recherche et synthetise l actualite professionnelle des masseurs-kinesitherapeutes
-pour la semaine du {date_semaine}.
+publiee pendant la semaine ecoulee, du {date_semaine}.
+Ne retiens que des informations de cette periode (ou des textes entres en vigueur
+pendant cette periode).
 
 Effectue des recherches sur :
 1. Actualites de l Ordre des masseurs-kinesitherapeutes (CNOMK)
@@ -175,10 +183,16 @@ REGLES IMPORTANTES :
 - Ne rien inventer : ne rapporter que des informations verifiees
 - Citer les sources (HAS, CNOMK, Journal Officiel, ARS)
 - Vocabulaire professionnel adapte aux MK
-- Si peu d actualites sur un theme, le mentionner brievement plutot que d inventer
+- Si peu d actualites sur un theme, ecrire simplement : Aucune information trouvee
+  pour cette periode (ne jamais affirmer qu il n existe rien)
+- Tarifs et montants : ne donner que des chiffres retrouves dans une source citee,
+  sans calcul ni rapprochement personnel
+- N ecris jamais que les informations sont verifiees ou officielles
 - 3 a 5 actualites maximum par section, phrases courtes
 - Longueur totale : environ 800 a 1200 mots
-- Terminer par une note : Cette veille est generee automatiquement par Officia
+- Terminer par cette note : Cette veille est generee automatiquement par Officia a
+  partir de recherches sur le web. Les informations sont a verifier aupres des sources
+  citees avant toute decision professionnelle.
 
 FORMAT DE SORTIE (tres important) :
 - Reponds UNIQUEMENT avec le contenu HTML, sans phrase d introduction ni de conclusion
