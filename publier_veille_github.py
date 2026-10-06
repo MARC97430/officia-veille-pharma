@@ -8,9 +8,13 @@ Modifications 29/09/2026 :
 - Verification que Supabase repond AVANT de generer la veille (economie de credits API)
 - Alerte email via Brevo si la publication echoue
 - Exit code 1 en cas d'echec (GitHub Actions detecte l'erreur)
+
+Modifications 06/10/2026 :
+- Nettoyage du HTML genere : suppression de la phrase d'introduction et des balises ```html
 """
 
 import os
+import re
 import sys
 import requests
 from datetime import datetime, timedelta
@@ -92,6 +96,19 @@ def get_week_dates():
     return titre, date_semaine, monday
 
 
+def nettoyer_html(texte):
+    """Retire les phrases d'introduction et les balises ```html que l'IA ajoute parfois."""
+    m = re.search(r"```(?:html)?\s*(.*?)```", texte, re.DOTALL | re.IGNORECASE)
+    if m:
+        texte = m.group(1)
+    else:
+        texte = re.sub(r"```(?:html)?", "", texte, flags=re.IGNORECASE)
+    debut = texte.find("<")
+    if debut > 0:
+        texte = texte[debut:]
+    return texte.strip()
+
+
 def generate_veille_with_claude():
     import anthropic
     titre, date_semaine, monday = get_week_dates()
@@ -113,7 +130,8 @@ Genere un contenu HTML structure avec :
 - Changements remboursement / prix
 - Actualites officine
 
-REGLES : DCI uniquement (pas de noms de marque), ne rien inventer, vocabulaire en appui du pharmacien, HTML propre h2/h3 ul/li, citer les sources ANSM VIDAL."""
+REGLES : DCI uniquement (pas de noms de marque), ne rien inventer, vocabulaire en appui du pharmacien, HTML propre h2/h3 ul/li, citer les sources ANSM VIDAL.
+FORMAT DE SORTIE : reponds UNIQUEMENT avec le code HTML, sans phrase d introduction, sans conclusion et sans balises de code (pas de ```)."""
 
     response = client.messages.create(
         model="claude-sonnet-4-6",
@@ -125,6 +143,7 @@ REGLES : DCI uniquement (pas de noms de marque), ne rien inventer, vocabulaire e
     for block in response.content:
         if hasattr(block, 'text'):
             contenu_html += block.text
+    contenu_html = nettoyer_html(contenu_html)
     if not contenu_html.strip():
         contenu_html = "<p>Veille en cours de generation.</p>"
     post_facebook = f"Veille pharmaceutique - {titre}\n\nVotre veille est disponible sur le site Officia.\n\n#PharmacieReunion #Officia"
