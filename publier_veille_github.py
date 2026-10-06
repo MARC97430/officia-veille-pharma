@@ -11,6 +11,9 @@ Modifications 29/09/2026 :
 
 Modifications 06/10/2026 :
 - Nettoyage du HTML genere : suppression de la phrase d'introduction et des balises ```html
+
+Modifications 06/10/2026 (2) :
+- La veille du lundi couvre la semaine ecoulee (titre, recherche et bandeau "semaine precedente")
 """
 
 import os
@@ -78,8 +81,10 @@ def send_alert_email(subject, body):
 
 
 def get_week_dates():
+    # La veille part le lundi : elle couvre la SEMAINE ECOULEE
+    # (lundi precedent -> dimanche precedent), pas la semaine qui commence.
     today = datetime.now()
-    monday = today - timedelta(days=today.weekday())
+    monday = today - timedelta(days=today.weekday() + 7)
     sunday = monday + timedelta(days=6)
     MOIS_FR = {1:"janvier",2:"fevrier",3:"mars",4:"avril",5:"mai",6:"juin",
                7:"juillet",8:"aout",9:"septembre",10:"octobre",11:"novembre",12:"decembre"}
@@ -90,6 +95,9 @@ def get_week_dates():
     annee = monday.strftime("%Y")
     if monday.month == sunday.month:
         date_semaine = f"{jour_debut} au {jour_fin} {mois_debut} {annee}"
+    elif monday.year != sunday.year:
+        date_semaine = (f"{jour_debut} {mois_debut} {annee} au "
+                        f"{jour_fin} {mois_fin} {sunday.strftime('%Y')}")
     else:
         date_semaine = f"{jour_debut} {mois_debut} au {jour_fin} {mois_fin} {annee}"
     titre = f"Veille Pharmaceutique - Semaine du {date_semaine}"
@@ -115,7 +123,7 @@ def generate_veille_with_claude():
     client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
     prompt = f"""Tu es un assistant specialise en pharmacie officine en France, avec attention aux specificites de La Reunion.
 
-Recherche et synthetise l actualite pharmaceutique de la semaine du {date_semaine}.
+Recherche et synthetise l actualite pharmaceutique publiee pendant la semaine ecoulee, du {date_semaine}.
 
 Effectue des recherches sur :
 1. Nouveaux medicaments generiques commercialises en France
@@ -146,6 +154,10 @@ FORMAT DE SORTIE : reponds UNIQUEMENT avec le code HTML, sans phrase d introduct
     contenu_html = nettoyer_html(contenu_html)
     if not contenu_html.strip():
         contenu_html = "<p>Veille en cours de generation.</p>"
+    bandeau = (f"<p><em>Actualité de la semaine précédente : du {date_semaine}. "
+               "Informations issues de recherches web, à vérifier auprès des sources officielles "
+               "(ANSM, VIDAL).</em></p>\n")
+    contenu_html = bandeau + contenu_html
     post_facebook = f"Veille pharmaceutique - {titre}\n\nVotre veille est disponible sur le site Officia.\n\n#PharmacieReunion #Officia"
     return {"Titre": titre, "date_semaine": date_semaine, "contenu_html": contenu_html, "post_facebook": post_facebook}
 
