@@ -141,7 +141,8 @@ def styliser(html):
 def verifier_contenu(contenu):
     """Refuse un contenu trop court ou sans sections."""
     nb_sections = len(re.findall(r"<h2", contenu, re.IGNORECASE))
-    if nb_sections < 3 or len(contenu) < 1500:
+    # Seuil volontairement bas : une semaine calme donne une veille courte mais valable
+    if nb_sections < 3 or len(contenu) < 800:
         raise RuntimeError(
             f"Contenu insuffisant ({nb_sections} sections, {len(contenu)} caracteres)"
         )
@@ -185,8 +186,18 @@ REGLES IMPORTANTES :
 - Vocabulaire professionnel adapte aux MK
 - Si peu d actualites sur un theme, ecrire simplement : Aucune information trouvee
   pour cette periode (ne jamais affirmer qu il n existe rien)
-- Tarifs et montants : ne donner que des chiffres retrouves dans une source citee,
-  sans calcul ni rapprochement personnel
+- Ne remplis pas avec des informations plus anciennes : une information anterieure a la
+  periode n apparait que si le texte entre en vigueur pendant la periode
+- Si la semaine est calme, dis-le clairement en une phrase au debut
+- Chaque information n apparait qu une seule fois, dans la section la plus adaptee
+- Un titre h3 ne doit jamais affirmer quelque chose qui n est pas dans son paragraphe
+  (par exemple une reaction ou une position d un organisme)
+- Tarifs : pour un acte cote en lettre-cle (exemple AMK 10), indique la cotation et precise
+  que la lettre-cle vaut 2,21 euros en metropole et 2,43 euros en outre-mer (La Reunion).
+  Ne donne un montant en euros que s il figure dans une source citee, en precisant
+  metropole ou outre-mer. Ne fais aucun calcul personnel.
+- Dans la section La Reunion et Ocean Indien, ne parle que de La Reunion, de Mayotte et
+  de l Ocean Indien (pas des Antilles ni d autres territoires)
 - N ecris jamais que les informations sont verifiees ou officielles
 - 3 a 5 actualites maximum par section, phrases courtes
 - Longueur totale : environ 800 a 1200 mots
