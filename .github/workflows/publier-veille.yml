@@ -3,8 +3,8 @@ name: Publier Veille Pharmaceutique
 on:
   workflow_dispatch:
   schedule:
-    # Chaque lundi a 9h heure La Reunion (UTC+4 = 5h UTC)
-    - cron: '0 5 * * 1'
+    # Chaque lundi a 9h10 heure La Reunion (UTC+4 = 5h10 UTC)
+    - cron: '10 5 * * 1'
 
 jobs:
   publish:
