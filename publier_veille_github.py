@@ -14,6 +14,11 @@ Modifications 06/10/2026 :
 
 Modifications 06/10/2026 (2) :
 - La veille du lundi couvre la semaine ecoulee (titre, recherche et bandeau "semaine precedente")
+
+Modifications 16/11/2026 (proposition) :
+- Prompt : uniquement les informations datees de la semaine ecoulee, date + source obligatoires
+- Plus de paragraphe "Reunion" sans source officielle ; plans nationaux (ex. plan hivernal) signales "France hexagonale"
+- Pas de consigne inventee ; tous les lots cites ; ajout des textes du Journal officiel
 """
 
 import os
@@ -123,28 +128,37 @@ def generate_veille_with_claude():
     client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
     prompt = f"""Tu es un assistant specialise en pharmacie officine en France, avec attention aux specificites de La Reunion.
 
-Recherche et synthetise l actualite pharmaceutique publiee pendant la semaine ecoulee, du {date_semaine}.
+Recherche et synthetise l actualite pharmaceutique PUBLIEE OFFICIELLEMENT pendant la semaine ecoulee, du {date_semaine} (du lundi au dimanche inclus).
 
 Effectue des recherches sur :
-1. Nouveaux medicaments generiques commercialises en France
-2. Retraits de lots et alertes de securite ANSM
-3. Changements de prix et remboursement Securite Sociale
-4. Nouvelles molecules avec AMM en France
+1. Retraits de lots et alertes de securite ANSM
+2. Arretes, decrets et textes parus au Journal officiel concernant les pharmacies, les medicaments ou leur remboursement
+3. Nouveaux medicaments generiques et nouvelles molecules avec AMM en France
+4. Changements de prix et de remboursement Securite Sociale
 5. Actualites pharmacie officine
+
+REGLES DE FIABILITE (prioritaires sur tout le reste) :
+- PERIODE : ne retiens QUE les informations dont la date de publication officielle est comprise dans la semaine du {date_semaine}. Une information publiee avant cette semaine (meme importante) est ECARTEE, sauf si un fait nouveau est survenu pendant la semaine ; dans ce cas, ne decris que le fait nouveau.
+- DATE ET SOURCE : chaque element doit indiquer sa date de publication et sa source (ANSM, Journal officiel, VIDAL, ARS La Reunion...). Si tu ne trouves pas la date ou la source, n ecris pas l element.
+- NE RIEN INVENTER : ne mentionne aucune consigne (cesser la delivrance, contacter les patients, rappeler tous les lots...) qui ne figure pas explicitement dans la source. Cite tous les lots concernes (pas seulement un), avec leur numero.
+- LA REUNION : n ecris AUCUN paragraphe "Reunion", "DROM" ou "outre-mer" sauf si une source officielle (ANSM, ARS La Reunion, ministere) le mentionne explicitement pour La Reunion ou les DROM ; dans ce cas, cite-la. Ne fais aucune supposition locale (stocks, commandes, rétrocession...).
+- PLANS ET CAMPAGNES NATIONAUX (ex : plan hivernal, campagnes de vaccination) : ils visent en general la France hexagonale. Ne les mentionne que s ils sont nouveaux cette semaine ET precise "France hexagonale" sauf si la source indique que La Reunion est concernee. La Reunion est dans l hemisphere sud : en novembre c est le printemps (l hiver austral va de juin a aout). Ne presente JAMAIS un plan hivernal, une epidemie hivernale (grippe, bronchiolite, VRS) ou un conseil de stock lie a l hiver comme concernant La Reunion, sauf source officielle precisant le contraire.
+- VOCABULAIRE : DCI uniquement (pas de noms de marque, sauf dans une alerte de lot ou le nom commercial est necessaire pour identifier le produit), vocabulaire en appui du pharmacien, jamais de formulation qui engage a decider a sa place.
+- Si une rubrique n a aucune information verifiee cette semaine, ecris : "Aucune actualite verifiee cette semaine."
 
 Genere un contenu HTML structure avec :
 - Alertes securite et retraits de lots
+- Textes officiels et changements remboursement / prix
 - Nouveaux generiques et molecules
-- Changements remboursement / prix
 - Actualites officine
 
-REGLES : DCI uniquement (pas de noms de marque), ne rien inventer, vocabulaire en appui du pharmacien, HTML propre h2/h3 ul/li, citer les sources ANSM VIDAL.
+FORMAT : HTML propre h2/h3 ul/li.
 FORMAT DE SORTIE : reponds UNIQUEMENT avec le code HTML, sans phrase d introduction, sans conclusion et sans balises de code (pas de ```)."""
 
     response = client.messages.create(
         model="claude-sonnet-4-6",
-        max_tokens=4000,
-        tools=[{"type": "web_search_20250305", "name": "web_search", "max_uses": 8}],
+        max_tokens=5000,
+        tools=[{"type": "web_search_20250305", "name": "web_search", "max_uses": 12}],
         messages=[{"role": "user", "content": prompt}]
     )
     contenu_html = ""
